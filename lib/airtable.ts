@@ -66,18 +66,15 @@ export async function getRaceById(id: string): Promise<Race | null> {
   }
 }
 
-export async function getUpcomingRacesThisWeekend(): Promise<Race[]> {
+export async function getUpcomingRaces(months = 4): Promise<Race[]> {
   const all = await getRaces()
   const now = new Date()
-  const friday = new Date(now)
-  friday.setDate(now.getDate() + ((5 - now.getDay() + 7) % 7))
-  friday.setHours(0, 0, 0, 0)
-  const sunday = new Date(friday)
-  sunday.setDate(friday.getDate() + 2)
-  sunday.setHours(23, 59, 59, 999)
+  now.setHours(0, 0, 0, 0)
+  const limit = new Date(now)
+  limit.setMonth(limit.getMonth() + months)
 
   return all.filter((r) => {
     const d = new Date(r.date)
-    return d >= friday && d <= sunday
+    return d >= now && d <= limit
   })
 }

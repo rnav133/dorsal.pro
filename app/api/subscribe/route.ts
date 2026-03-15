@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
     // Send confirmation email
     await resend.emails.send({
-      from: 'dorsal.pro <hola@dorsal.pro>',
+      from: 'dorsal.pro <onboarding@resend.dev>',
       to: cleanEmail,
       subject: '¡Bienvenido a dorsal.pro! 🏃',
       html: buildConfirmationEmail(cleanName),

@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
     })
 
     await resend.emails.send({
-      from: 'dorsal.pro <entrena@dorsal.pro>',
+      from: 'dorsal.pro <onboarding@resend.dev>',
       to: subscriber.email,
       replyTo: 'entrena@dorsal.pro',
       subject,
