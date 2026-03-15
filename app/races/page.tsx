@@ -110,16 +110,25 @@ function RaceCard({ race }: { race: Race }) {
           <p className="text-xs text-zinc-500">💶 {race.price} €</p>
         )}
       </div>
-      {race.registerUrl && (
-        <a
-          href={race.registerUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block w-full text-center text-xs font-semibold bg-zinc-800 group-hover:bg-green-500 group-hover:text-black text-zinc-300 border border-zinc-700 group-hover:border-green-500 py-2 rounded-lg transition-all"
+      <div className="flex gap-2">
+        {race.registerUrl && (
+          <a
+            href={race.registerUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 text-center text-xs font-semibold bg-zinc-800 group-hover:bg-green-500 group-hover:text-black text-zinc-300 border border-zinc-700 group-hover:border-green-500 py-2 rounded-lg transition-all"
+          >
+            Inscribirse →
+          </a>
+        )}
+        <Link
+          href={`/pro/generar-plan?raceId=${race.id}`}
+          className="flex-1 text-center text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-green-400 border border-zinc-700 py-2 rounded-lg transition-all"
+          title="Generar plan de entrenamiento (Dorsal Pro)"
         >
-          Inscribirse →
-        </a>
-      )}
+          📋 Mi plan
+        </Link>
+      </div>
     </div>
   )
 }

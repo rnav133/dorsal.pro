@@ -36,10 +36,10 @@ export default function BienvenidoProPage() {
           </div>
 
           <Link
-            href="/races"
+            href="/pro/generar-plan"
             className="inline-block bg-green-500 hover:bg-green-400 text-black font-bold px-8 py-3 rounded-xl transition-colors"
           >
-            Ver carreras y generar mi plan →
+            Generar mi plan de entrenamiento →
           </Link>
         </div>
       </div>
