@@ -98,7 +98,7 @@ function SubscribeForm() {
                 Pro · 4,99 €/mes
               </div>
               <h1 className="text-3xl font-bold text-zinc-50 mb-3">Dorsal Pro</h1>
-              <p className="text-zinc-400">Plan de entrenamiento personalizado con IA, entrenamiento del día y nutrición.</p>
+              <p className="text-zinc-400">Plan de entrenamiento personalizado, entrenamiento del día y guía de nutrición.</p>
             </>
           ) : (
             <>

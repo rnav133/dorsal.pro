@@ -94,7 +94,7 @@ export default function HomePage() {
             <span className="text-xs font-semibold text-green-400 uppercase tracking-widest">Dorsal Pro · 4,99 €/mes</span>
             <h2 className="text-3xl font-bold text-zinc-50 mt-2 mb-3">Tu entrenador personal, en el móvil</h2>
             <p className="text-zinc-400 mb-8 max-w-md">
-              Marca la carrera, dinos tu nivel y disponibilidad. Recibe un plan de entrenamiento generado con IA, adaptado a ti, que se ajusta según tu progreso.
+              Marca la carrera, dinos tu nivel y disponibilidad. Tu entrenador personal preparará un plan adaptado a ti que se ajusta según tu progreso.
             </p>
             <div className="grid sm:grid-cols-2 gap-3 mb-8">
               {[

@@ -75,12 +75,12 @@ function GenerarPlanForm() {
             <div className="w-16 h-16 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center mx-auto mb-6">
               <span className="text-3xl">📬</span>
             </div>
-            <h1 className="text-2xl font-bold text-zinc-50 mb-3">¡Plan generado!</h1>
-            <p className="text-zinc-400 mb-6">
-              Tu plan de entrenamiento personalizado para <strong className="text-zinc-100">{selectedRace?.name}</strong> está en camino. Revisa tu correo en unos minutos.
+            <h1 className="text-2xl font-bold text-zinc-50 mb-3">¡Solicitud recibida!</h1>
+            <p className="text-zinc-400 mb-4">
+              Nuestro equipo ya está trabajando en tu plan personalizado para <strong className="text-zinc-100">{selectedRace?.name}</strong>.
             </p>
             <p className="text-sm text-zinc-500 mb-8">
-              A partir de mañana recibirás el entrenamiento del día cada mañana. Responde al email con un <strong className="text-zinc-300">sí</strong> o <strong className="text-zinc-300">no</strong> para que el plan se adapte a ti.
+              En breve recibirás tu plan completo en el correo. A partir de entonces, cada mañana te llegará el entrenamiento del día. Responde con un <strong className="text-zinc-300">sí</strong> o <strong className="text-zinc-300">no</strong> para que tu entrenador ajuste el plan según cómo te encuentres.
             </p>
             <Link href="/races" className="inline-block bg-green-500 hover:bg-green-400 text-black font-bold px-8 py-3 rounded-xl transition-colors">
               Ver más carreras →
@@ -102,7 +102,7 @@ function GenerarPlanForm() {
         <div className="mb-8">
           <span className="text-xs font-semibold text-green-400 uppercase tracking-widest">Dorsal Pro</span>
           <h1 className="text-2xl font-bold text-zinc-50 mt-1 mb-2">Genera tu plan de entrenamiento</h1>
-          <p className="text-zinc-400 text-sm">Cuéntanos sobre ti y tu carrera. Claude creará un plan personalizado semana a semana.</p>
+          <p className="text-zinc-400 text-sm">Cuéntanos sobre ti y tu carrera. Nuestro equipo de entrenadores preparará tu plan personalizado semana a semana.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -215,7 +215,7 @@ function GenerarPlanForm() {
             disabled={status === 'loading'}
             className="w-full bg-green-500 hover:bg-green-400 disabled:opacity-50 text-black font-bold py-3 rounded-xl transition-colors"
           >
-            {status === 'loading' ? 'Generando tu plan con IA...' : 'Generar mi plan de entrenamiento →'}
+            {status === 'loading' ? 'Enviando datos a tu entrenador...' : 'Solicitar mi plan de entrenamiento →'}
           </button>
 
           <p className="text-xs text-zinc-600 text-center">
