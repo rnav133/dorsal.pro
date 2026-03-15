@@ -28,23 +28,24 @@ export default function RacesPage() {
   }, [typeFilter, provinceFilter])
 
   return (
-    <div className="min-h-screen bg-white">
-      <nav className="border-b border-slate-100 px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="text-xl font-bold text-orange-500 tracking-tight">dorsal.pro</Link>
-        <Link href="/subscribe" className="text-sm bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+      <nav className="border-b border-zinc-800 px-6 py-4 flex items-center justify-between">
+        <Link href="/" className="text-lg font-bold text-green-400 tracking-tight">dorsal.pro</Link>
+        <Link href="/subscribe" className="text-sm bg-green-500 hover:bg-green-400 text-black font-semibold px-4 py-2 rounded-lg transition-colors">
           Suscribirse gratis
         </Link>
       </nav>
 
-      <div className="max-w-5xl mx-auto px-6 py-8">
-        <h1 className="text-3xl font-bold text-slate-900 mb-6">Carreras en España</h1>
+      <div className="max-w-5xl mx-auto px-6 py-10">
+        <h1 className="text-3xl font-bold text-zinc-50 mb-2">Carreras en España</h1>
+        <p className="text-zinc-400 text-sm mb-8">Filtra por tipo de carrera o provincia</p>
 
         {/* Filters */}
         <div className="flex flex-wrap gap-3 mb-8">
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400"
+            className="bg-zinc-800 border border-zinc-700 text-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
           >
             <option value="">Todos los tipos</option>
             {RACE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -52,7 +53,7 @@ export default function RacesPage() {
           <select
             value={provinceFilter}
             onChange={(e) => setProvinceFilter(e.target.value)}
-            className="border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400"
+            className="bg-zinc-800 border border-zinc-700 text-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
           >
             <option value="">Todas las provincias</option>
             {PROVINCES.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -60,18 +61,18 @@ export default function RacesPage() {
           {(typeFilter || provinceFilter) && (
             <button
               onClick={() => { setTypeFilter(''); setProvinceFilter('') }}
-              className="text-sm text-slate-500 hover:text-slate-700 px-3 py-2"
+              className="text-sm text-zinc-500 hover:text-zinc-300 px-3 py-2 transition-colors"
             >
-              Limpiar filtros ✕
+              Limpiar ✕
             </button>
           )}
         </div>
 
         {/* Race list */}
         {loading ? (
-          <div className="text-center py-20 text-slate-400">Cargando carreras...</div>
+          <div className="text-center py-20 text-zinc-500">Cargando carreras...</div>
         ) : races.length === 0 ? (
-          <div className="text-center py-20 text-slate-400">No hay carreras con estos filtros</div>
+          <div className="text-center py-20 text-zinc-500">No hay carreras con estos filtros</div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {races.map((race) => (
@@ -91,26 +92,30 @@ function RaceCard({ race }: { race: Race }) {
   })
 
   return (
-    <div className="border border-slate-100 rounded-xl p-5 shadow-sm hover:shadow-md hover:border-orange-200 transition-all">
-      {race.featured && (
-        <span className="text-xs font-semibold text-orange-500 uppercase tracking-wide">⭐ Destacada</span>
-      )}
-      <div className="flex items-start justify-between mt-1 mb-2">
-        <span className="text-xs font-medium bg-orange-50 text-orange-600 px-2 py-1 rounded-full">{race.type}</span>
-        <span className="text-xs text-slate-400">{race.distance}</span>
+    <div className="bg-zinc-900 border border-zinc-800 hover:border-green-500/40 rounded-xl p-5 transition-all hover:bg-zinc-800/80 group">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs font-semibold text-green-400 bg-green-400/10 px-2 py-1 rounded-full">
+          {race.type}
+        </span>
+        {race.featured && <span className="text-xs text-zinc-500">⭐ Destacada</span>}
       </div>
-      <h3 className="font-semibold text-slate-900 text-sm leading-snug mb-1">{race.name}</h3>
-      <p className="text-xs text-slate-500 mb-1">📍 {race.city}, {race.province}</p>
-      <p className="text-xs text-slate-500 mb-4">📅 {formattedDate}</p>
-      {race.price !== undefined && (
-        <p className="text-xs text-slate-500 mb-3">💶 {race.price > 0 ? `${race.price} €` : 'Precio no disponible'}</p>
-      )}
+      <h3 className="font-semibold text-zinc-100 text-sm leading-snug mb-3 group-hover:text-green-400 transition-colors">
+        {race.name || '(sin nombre)'}
+      </h3>
+      <div className="space-y-1 mb-4">
+        <p className="text-xs text-zinc-500">📍 {race.city}, {race.province}</p>
+        <p className="text-xs text-zinc-500">📅 {formattedDate}</p>
+        {race.distance && <p className="text-xs text-zinc-500">📏 {race.distance}</p>}
+        {race.price !== undefined && race.price > 0 && (
+          <p className="text-xs text-zinc-500">💶 {race.price} €</p>
+        )}
+      </div>
       {race.registerUrl && (
         <a
           href={race.registerUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="block w-full text-center text-xs font-semibold bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-lg transition-colors"
+          className="block w-full text-center text-xs font-semibold bg-zinc-800 group-hover:bg-green-500 group-hover:text-black text-zinc-300 border border-zinc-700 group-hover:border-green-500 py-2 rounded-lg transition-all"
         >
           Inscribirse →
         </a>
