@@ -36,7 +36,7 @@ export default function SubscribePage() {
   return (
     <div className="min-h-screen bg-white">
       <nav className="border-b border-slate-100 px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="text-xl font-bold text-orange-500 tracking-tight">dorsal.run</Link>
+        <Link href="/" className="text-xl font-bold text-orange-500 tracking-tight">dorsal.pro</Link>
       </nav>
 
       <div className="max-w-lg mx-auto px-6 py-16">

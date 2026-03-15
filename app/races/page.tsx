@@ -30,7 +30,7 @@ export default function RacesPage() {
   return (
     <div className="min-h-screen bg-white">
       <nav className="border-b border-slate-100 px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="text-xl font-bold text-orange-500 tracking-tight">dorsal.run</Link>
+        <Link href="/" className="text-xl font-bold text-orange-500 tracking-tight">dorsal.pro</Link>
         <Link href="/subscribe" className="text-sm bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
           Suscribirse gratis
         </Link>

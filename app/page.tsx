@@ -7,7 +7,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-white">
       {/* Nav */}
       <nav className="border-b border-slate-100 px-6 py-4 flex items-center justify-between">
-        <span className="text-xl font-bold text-orange-500 tracking-tight">dorsal.run</span>
+        <span className="text-xl font-bold text-orange-500 tracking-tight">dorsal.pro</span>
         <div className="flex items-center gap-4">
           <Link href="/races" className="text-sm text-slate-600 hover:text-slate-900">
             Carreras
@@ -90,7 +90,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="border-t border-slate-100 px-6 py-8 text-center text-sm text-slate-400">
-        <p>© {new Date().getFullYear()} dorsal.run · Hecho con ❤️ para corredores de España</p>
+        <p>© {new Date().getFullYear()} dorsal.pro · Hecho con ❤️ para corredores de España</p>
       </footer>
     </div>
   )
