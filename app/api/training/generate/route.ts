@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { after } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { generateTrainingPlan } from '@/lib/claude'
 import { Resend } from 'resend'
 import { TrainingWeek } from '@/types'
+
+export const maxDuration = 120
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -72,27 +75,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Generate plan with Claude
-    const weeks = await generateTrainingPlan({
-      subscriberId: subscriber.id,
-      raceName,
-      raceDate,
-      raceDistance,
-      raceType,
-      currentPace,
-      availableDays: Number(availableDays),
-      level,
-      name: subscriber.name,
-      injuries,
-      recentRaceResults,
-      vo2max,
-      weeklyKm,
-      strengthDays,
-      equipment,
-      extraInfo,
-    })
-
-    // Save race registration
+    // Save race registration immediately
     const { data: registration, error: regError } = await supabase
       .from('race_registrations')
       .insert({
@@ -106,30 +89,48 @@ export async function POST(req: NextRequest) {
 
     if (regError) throw regError
 
-    // Save training plan
-    const { data: plan, error: planError } = await supabase
-      .from('training_plans')
-      .insert({
-        subscriber_id: subscriber.id,
-        race_registration_id: registration.id,
-        race_name: raceName,
-        race_date: raceDate,
-        plan_data: { weeks },
-      })
-      .select('id')
-      .single()
+    // Generate plan and send email in background — respond immediately
+    after(async () => {
+      try {
+        const weeks = await generateTrainingPlan({
+          subscriberId: subscriber.id,
+          raceName,
+          raceDate,
+          raceDistance,
+          raceType,
+          currentPace,
+          availableDays: Number(availableDays),
+          level,
+          name: subscriber.name,
+          injuries,
+          recentRaceResults,
+          vo2max,
+          weeklyKm,
+          strengthDays,
+          equipment,
+          extraInfo,
+        })
 
-    if (planError) throw planError
+        await supabase.from('training_plans').insert({
+          subscriber_id: subscriber.id,
+          race_registration_id: registration.id,
+          race_name: raceName,
+          race_date: raceDate,
+          plan_data: { weeks },
+        })
 
-    // Send plan by email
-    await resend.emails.send({
-      from: 'dorsal.pro <onboarding@resend.dev>',
-      to: email.toLowerCase(),
-      subject: `Tu plan de entrenamiento para ${raceName} 🏃`,
-      html: buildPlanEmail(subscriber.name, raceName, raceDate, weeks),
+        await resend.emails.send({
+          from: 'dorsal.pro <onboarding@resend.dev>',
+          to: email.toLowerCase(),
+          subject: `Tu plan de entrenamiento para ${raceName} 🏃`,
+          html: buildPlanEmail(subscriber.name, raceName, raceDate, weeks),
+        })
+      } catch (err) {
+        console.error('Background plan generation error:', err)
+      }
     })
 
-    return NextResponse.json({ planId: plan.id, weeks })
+    return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('Error generating training plan:', error)
     return NextResponse.json({ error: 'Error generando el plan' }, { status: 500 })
@@ -160,6 +161,7 @@ function buildPlanEmail(name: string | null, raceName: string, raceDate: string,
           <div style="display:flex;gap:12px;">
             ${day.duration ? `<span style="color:#52525b;font-size:11px;">⏱ ${day.duration}</span>` : ''}
             ${(day as any).distance ? `<span style="color:#52525b;font-size:11px;">📏 ${(day as any).distance}</span>` : ''}
+            ${(day as any).pace ? `<span style="color:#52525b;font-size:11px;">🏃 ${(day as any).pace}</span>` : ''}
           </div>
           ${day.nutrition ? `
           <div style="margin-top:10px;padding-top:10px;border-top:1px solid #27272a;">
@@ -181,14 +183,11 @@ function buildPlanEmail(name: string | null, raceName: string, raceDate: string,
     <p style="color:#a1a1aa;font-size:14px;margin:0 0 4px;">Tu plan de entrenamiento para:</p>
     <p style="color:#fafafa;font-size:18px;font-weight:700;margin:0 0 4px;">${raceName}</p>
     <p style="color:#a1a1aa;font-size:13px;margin:0 0 32px;">📅 ${raceDateFormatted}</p>
-
     <div style="background:#22c55e10;border:1px solid #22c55e30;border-radius:12px;padding:16px;margin-bottom:32px;">
       <p style="color:#22c55e;font-size:13px;font-weight:600;margin:0 0 4px;">¿Cómo funciona?</p>
-      <p style="color:#a1a1aa;font-size:13px;margin:0;">Cada mañana recibirás el entrenamiento del día. Responde al email con <strong style="color:#fafafa;">sí</strong> si lo completaste o <strong style="color:#fafafa;">no</strong> si no pudiste — tu plan se ajustará automáticamente.</p>
+      <p style="color:#a1a1aa;font-size:13px;margin:0;">Cada mañana recibirás el entrenamiento del día. Responde con <strong style="color:#fafafa;">sí</strong> si lo completaste o <strong style="color:#fafafa;">no</strong> si no pudiste — tu plan se ajustará automáticamente.</p>
     </div>
-
     ${weeksHtml}
-
     <p style="color:#3f3f46;font-size:12px;text-align:center;margin-top:32px;">dorsal.pro · Tu entrenador personal</p>
   </div>
 </body>

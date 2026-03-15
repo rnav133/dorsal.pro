@@ -101,20 +101,41 @@ REGLAS OBLIGATORIAS:
 - ${params.vo2max ? `Usa el VO2max de ${params.vo2max} para calcular zonas de ritmo más precisas` : ''}
 - ${params.weeklyKm ? `El corredor ya hace ${params.weeklyKm} km semanales — parte de ese volumen como base` : ''}`
 
+  // For long plans cap at 12 weeks to keep JSON manageable
+  const cappedWeeks = Math.min(weeksUntilRace, 12)
+
   const message = await client.messages.create({
-    model: 'claude-opus-4-6',
-    max_tokens: 8192,
-    messages: [{ role: 'user', content: prompt }],
+    model: 'claude-sonnet-4-6',
+    max_tokens: 16000,
+    messages: [{ role: 'user', content: prompt.replace(
+      `${weeksUntilRace} semanas`,
+      `${cappedWeeks} semanas`
+    ).replace(
+      `de ${weeksUntilRace} semanas`,
+      `de ${cappedWeeks} semanas`
+    )}],
   })
 
   const content = message.content[0]
   if (content.type !== 'text') throw new Error('Unexpected response type from Claude')
 
-  const jsonMatch = content.text.match(/\{[\s\S]*\}/)
+  // Extract JSON — handle potentially truncated responses
+  const jsonMatch = content.text.match(/\{[\s\S]*/)
   if (!jsonMatch) throw new Error('No JSON found in Claude response')
 
-  const parsed = JSON.parse(jsonMatch[0])
-  return parsed.weeks as TrainingWeek[]
+  let jsonStr = jsonMatch[0]
+  // Try to parse; if it fails due to truncation, close open structures
+  try {
+    const parsed = JSON.parse(jsonStr)
+    return parsed.weeks as TrainingWeek[]
+  } catch {
+    // Close any unclosed JSON structures
+    const openBraces = (jsonStr.match(/\{/g) || []).length - (jsonStr.match(/\}/g) || []).length
+    const openBrackets = (jsonStr.match(/\[/g) || []).length - (jsonStr.match(/\]/g) || []).length
+    jsonStr += ']'.repeat(Math.max(0, openBrackets)) + '}'.repeat(Math.max(0, openBraces))
+    const parsed = JSON.parse(jsonStr)
+    return parsed.weeks as TrainingWeek[]
+  }
 }
 
 interface AdjustPlanParams {
