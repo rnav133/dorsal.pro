@@ -9,7 +9,11 @@ const resend = new Resend(process.env.RESEND_API_KEY)
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { email, raceId, raceName, raceDate, raceDistance, raceType, currentPace, availableDays, level } = body
+    const {
+      email, raceId, raceName, raceDate, raceDistance, raceType,
+      currentPace, availableDays, level,
+      injuries, recentRaceResults, vo2max, weeklyKm, strengthDays, equipment, extraInfo,
+    } = body
 
     // Verify subscriber exists and is Pro
     const { data: subscriber, error: subError } = await supabase
@@ -36,6 +40,13 @@ export async function POST(req: NextRequest) {
       availableDays: Number(availableDays),
       level,
       name: subscriber.name,
+      injuries,
+      recentRaceResults,
+      vo2max,
+      weeklyKm,
+      strengthDays,
+      equipment,
+      extraInfo,
     })
 
     // Save race registration

@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { TrainingPlan, TrainingWeek } from '@/types'
+import { TrainingWeek } from '@/types'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -9,10 +9,18 @@ interface GeneratePlanParams {
   raceDate: string
   raceDistance: string
   raceType: string
-  currentPace: string        // ej: "5:30 min/km"
-  availableDays: number      // días por semana disponibles
+  currentPace: string
+  availableDays: number
   level: 'principiante' | 'intermedio' | 'avanzado'
   name?: string
+  // Optional enrichment fields
+  injuries?: string
+  recentRaceResults?: string
+  vo2max?: string
+  weeklyKm?: string
+  strengthDays?: string
+  equipment?: string[]
+  extraInfo?: string
 }
 
 export async function generateTrainingPlan(params: GeneratePlanParams): Promise<TrainingWeek[]> {
@@ -21,13 +29,27 @@ export async function generateTrainingPlan(params: GeneratePlanParams): Promise<
     Math.round((new Date(params.raceDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 7))
   )
 
-  const prompt = `Eres un entrenador de running experto. Genera un plan de entrenamiento personalizado en JSON.
+  const strengthDays = Number(params.strengthDays || 0)
+  const totalDays = params.availableDays
+  const runDays = Math.max(1, totalDays - strengthDays)
+
+  const optionalData = [
+    params.vo2max ? `- VO2max: ${params.vo2max} ml/kg/min` : '',
+    params.weeklyKm ? `- Kilómetros semanales actuales: ${params.weeklyKm} km` : '',
+    params.recentRaceResults ? `- Resultados recientes: ${params.recentRaceResults}` : '',
+    params.injuries ? `- Lesiones / molestias: ${params.injuries}` : '',
+    params.equipment?.length ? `- Material de fuerza disponible: ${params.equipment.join(', ')}` : '',
+    params.extraInfo ? `- Info adicional: ${params.extraInfo}` : '',
+  ].filter(Boolean).join('\n')
+
+  const prompt = `Eres un entrenador de running y preparación física experto. Genera un plan de entrenamiento personalizado en JSON.
 
 DATOS DEL CORREDOR:
 - Nombre: ${params.name || 'Corredor'}
 - Nivel: ${params.level}
-- Ritmo actual: ${params.currentPace}
-- Días disponibles por semana: ${params.availableDays}
+- Ritmo actual de rodaje suave: ${params.currentPace}
+- Días totales disponibles por semana: ${totalDays} (${runDays} de running + ${strengthDays} de fuerza)
+${optionalData}
 
 CARRERA OBJETIVO:
 - Nombre: ${params.raceName}
@@ -36,7 +58,7 @@ CARRERA OBJETIVO:
 - Fecha: ${params.raceDate}
 - Semanas hasta la carrera: ${weeksUntilRace}
 
-Genera un plan de entrenamiento de ${weeksUntilRace} semanas. Responde ÚNICAMENTE con JSON válido con esta estructura exacta:
+Genera un plan completo de ${weeksUntilRace} semanas. Responde ÚNICAMENTE con JSON válido con esta estructura:
 
 {
   "weeks": [
@@ -46,16 +68,18 @@ Genera un plan de entrenamiento de ${weeksUntilRace} semanas. Responde ÚNICAMEN
       "days": [
         {
           "day": "Lunes",
+          "type": "running",
           "workout": "Descripción detallada del entrenamiento",
           "duration": "45 min",
           "distance": "8 km",
+          "pace": "5:45-6:00 min/km",
           "intensity": "baja",
           "completed": null,
           "feedback": null,
           "nutrition": {
             "preworkout": "Qué comer antes",
             "postworkout": "Qué comer después",
-            "notes": "Notas adicionales de nutrición si aplica"
+            "notes": "Notas adicionales"
           }
         }
       ]
@@ -63,13 +87,19 @@ Genera un plan de entrenamiento de ${weeksUntilRace} semanas. Responde ÚNICAMEN
   ]
 }
 
-REGLAS:
-- Solo incluye días de entrenamiento (no descanso), máximo ${params.availableDays} días por semana
+REGLAS OBLIGATORIAS:
+- Máximo ${totalDays} días por semana (${runDays} running + ${strengthDays} fuerza)
+- El campo "type" debe ser "running" o "strength"
+- El campo "pace" es OBLIGATORIO en días de running — indica el ritmo exacto en min/km para ese entrenamiento (ej: "5:20-5:30 min/km" para tempo, "6:00-6:20 min/km" para rodaje suave). Calcula los ritmos en función del ritmo actual del corredor y la intensidad del día
+- En días de fuerza: describe los ejercicios adaptados al material disponible (${params.equipment?.join(', ') || 'peso corporal'}), series y repeticiones. El campo "pace" puede ser null en días de fuerza
 - La intensidad debe ser "baja", "media" o "alta"
-- Semana final (última semana): reducir volumen al 60% (tapering)
-- Incluir nutrición especial solo en días de entrenamiento de alta intensidad o larga distancia
-- Progresión gradual de volumen (no aumentar más de 10% por semana)
-- completed y feedback siempre null en el plan inicial`
+- ${params.injuries ? `LESIONES: el corredor tiene "${params.injuries}" — adapta los ejercicios y ritmos para evitar agravar la lesión` : 'Sin lesiones conocidas'}
+- Progresión gradual de volumen (máximo +10% por semana)
+- Última semana: tapering — reducir volumen al 50-60%
+- Incluir nutrición solo en días de alta intensidad o larga distancia
+- completed y feedback siempre null
+- ${params.vo2max ? `Usa el VO2max de ${params.vo2max} para calcular zonas de ritmo más precisas` : ''}
+- ${params.weeklyKm ? `El corredor ya hace ${params.weeklyKm} km semanales — parte de ese volumen como base` : ''}`
 
   const message = await client.messages.create({
     model: 'claude-opus-4-6',
@@ -103,7 +133,7 @@ ${params.recentFeedback.map(f => `- ${f.day}: ${f.completed ? 'Completado' : 'No
 PLAN RESTANTE (en JSON):
 ${JSON.stringify(params.remainingWeeks, null, 2)}
 
-Ajusta el plan restante según el feedback. Si hay lesión o dolor, reduce intensidad. Si fue muy fácil, aumenta ligeramente.
+Ajusta el plan restante según el feedback. Si hay lesión o dolor, reduce intensidad y adapta ejercicios. Si fue muy fácil, aumenta ligeramente la carga. Mantén siempre los ritmos exactos en el campo "pace".
 Responde ÚNICAMENTE con el JSON del plan ajustado, manteniendo la misma estructura exacta.`
 
   const message = await client.messages.create({

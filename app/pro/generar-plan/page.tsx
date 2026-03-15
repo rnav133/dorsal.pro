@@ -5,6 +5,26 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Race } from '@/types'
 
+const EQUIPMENT_OPTIONS = [
+  'Gimnasio completo',
+  'Mancuernas / pesas',
+  'Kettlebell',
+  'Bandas elásticas',
+  'Peso corporal únicamente',
+]
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest pt-2 pb-1 border-t border-zinc-800">
+      {children}
+    </p>
+  )
+}
+
+function OptionalBadge() {
+  return <span className="text-zinc-600 font-normal ml-1 normal-case tracking-normal text-xs">(opcional)</span>
+}
+
 function GenerarPlanForm() {
   const searchParams = useSearchParams()
   const preselectedRaceId = searchParams.get('raceId')
@@ -12,6 +32,7 @@ function GenerarPlanForm() {
   const [races, setRaces] = useState<Race[]>([])
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
+  const [selectedEquipment, setSelectedEquipment] = useState<string[]>([])
 
   const [form, setForm] = useState({
     email: '',
@@ -19,6 +40,13 @@ function GenerarPlanForm() {
     currentPace: '',
     availableDays: '3',
     level: 'intermedio' as 'principiante' | 'intermedio' | 'avanzado',
+    // Optional fields
+    injuries: '',
+    recentRaceResults: '',
+    vo2max: '',
+    weeklyKm: '',
+    strengthDays: '1',
+    extraInfo: '',
   })
 
   useEffect(() => {
@@ -28,6 +56,12 @@ function GenerarPlanForm() {
   }, [])
 
   const selectedRace = races.find((r) => r.id === form.raceId)
+
+  function toggleEquipment(item: string) {
+    setSelectedEquipment((prev) =>
+      prev.includes(item) ? prev.filter((e) => e !== item) : [...prev, item]
+    )
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -49,6 +83,13 @@ function GenerarPlanForm() {
           currentPace: form.currentPace,
           availableDays: form.availableDays,
           level: form.level,
+          injuries: form.injuries,
+          recentRaceResults: form.recentRaceResults,
+          vo2max: form.vo2max,
+          weeklyKm: form.weeklyKm,
+          strengthDays: form.strengthDays,
+          equipment: selectedEquipment,
+          extraInfo: form.extraInfo,
         }),
       })
       const data = await res.json()
@@ -101,13 +142,15 @@ function GenerarPlanForm() {
       <div className="max-w-lg mx-auto px-6 py-12">
         <div className="mb-8">
           <span className="text-xs font-semibold text-green-400 uppercase tracking-widest">Dorsal Pro</span>
-          <h1 className="text-2xl font-bold text-zinc-50 mt-1 mb-2">Genera tu plan de entrenamiento</h1>
-          <p className="text-zinc-400 text-sm">Cuéntanos sobre ti y tu carrera. Nuestro equipo de entrenadores preparará tu plan personalizado semana a semana.</p>
+          <h1 className="text-2xl font-bold text-zinc-50 mt-1 mb-2">Tu plan de entrenamiento</h1>
+          <p className="text-zinc-400 text-sm">Cuanta más información nos des, mejor y más preciso será tu plan. Los campos marcados con * son obligatorios.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
 
-          {/* Email */}
+          {/* ── DATOS BÁSICOS ── */}
+          <SectionTitle>Datos básicos</SectionTitle>
+
           <div>
             <label className="block text-sm font-medium text-zinc-300 mb-1.5">Tu email de Dorsal Pro *</label>
             <input
@@ -120,7 +163,6 @@ function GenerarPlanForm() {
             />
           </div>
 
-          {/* Race selector */}
           <div>
             <label className="block text-sm font-medium text-zinc-300 mb-1.5">Carrera objetivo *</label>
             <select
@@ -132,46 +174,29 @@ function GenerarPlanForm() {
               <option value="">Selecciona una carrera</option>
               {races.map((r) => {
                 const date = new Date(r.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
-                return (
-                  <option key={r.id} value={r.id}>
-                    {r.name} — {date} ({r.type})
-                  </option>
-                )
+                return <option key={r.id} value={r.id}>{r.name} — {date} ({r.type})</option>
               })}
             </select>
             {selectedRace && (
-              <p className="text-xs text-zinc-500 mt-1.5">
-                📍 {selectedRace.city}, {selectedRace.province} · {selectedRace.distance}
-              </p>
+              <p className="text-xs text-zinc-500 mt-1.5">📍 {selectedRace.city}, {selectedRace.province} · {selectedRace.distance}</p>
             )}
           </div>
 
-          {/* Level */}
           <div>
             <label className="block text-sm font-medium text-zinc-300 mb-1.5">Tu nivel *</label>
             <div className="grid grid-cols-3 gap-2">
               {(['principiante', 'intermedio', 'avanzado'] as const).map((lvl) => (
-                <button
-                  key={lvl}
-                  type="button"
-                  onClick={() => setForm({ ...form, level: lvl })}
-                  className={`py-2.5 rounded-lg text-sm font-medium border transition-colors capitalize ${
-                    form.level === lvl
-                      ? 'bg-green-500 border-green-500 text-black'
-                      : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500'
-                  }`}
-                >
+                <button key={lvl} type="button" onClick={() => setForm({ ...form, level: lvl })}
+                  className={`py-2.5 rounded-lg text-sm font-medium border transition-colors capitalize ${form.level === lvl ? 'bg-green-500 border-green-500 text-black' : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500'}`}>
                   {lvl}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Current pace */}
           <div>
             <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-              Ritmo actual *
-              <span className="text-zinc-500 font-normal ml-1">(ej: 5:30 min/km)</span>
+              Ritmo actual * <span className="text-zinc-500 font-normal">(ej: 5:30 min/km)</span>
             </label>
             <input
               type="text"
@@ -183,32 +208,128 @@ function GenerarPlanForm() {
             />
           </div>
 
-          {/* Available days */}
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-              Días disponibles por semana *
-            </label>
+            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Días disponibles para entrenar por semana *</label>
             <div className="flex gap-2">
               {[2, 3, 4, 5, 6].map((d) => (
-                <button
-                  key={d}
-                  type="button"
-                  onClick={() => setForm({ ...form, availableDays: String(d) })}
-                  className={`flex-1 py-2.5 rounded-lg text-sm font-bold border transition-colors ${
-                    form.availableDays === String(d)
-                      ? 'bg-green-500 border-green-500 text-black'
-                      : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500'
-                  }`}
-                >
+                <button key={d} type="button" onClick={() => setForm({ ...form, availableDays: String(d) })}
+                  className={`flex-1 py-2.5 rounded-lg text-sm font-bold border transition-colors ${form.availableDays === String(d) ? 'bg-green-500 border-green-500 text-black' : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500'}`}>
                   {d}
                 </button>
               ))}
             </div>
           </div>
 
-          {errorMsg && (
-            <p className="text-sm text-red-400">{errorMsg}</p>
+          {/* ── RENDIMIENTO ── */}
+          <SectionTitle>Rendimiento <OptionalBadge /></SectionTitle>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                VO2max <OptionalBadge />
+              </label>
+              <input
+                type="number"
+                value={form.vo2max}
+                onChange={(e) => setForm({ ...form, vo2max: e.target.value })}
+                placeholder="ej: 52"
+                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-zinc-600"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                Km semanales actuales <OptionalBadge />
+              </label>
+              <input
+                type="number"
+                value={form.weeklyKm}
+                onChange={(e) => setForm({ ...form, weeklyKm: e.target.value })}
+                placeholder="ej: 30"
+                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-zinc-600"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+              Resultados de carreras recientes <OptionalBadge />
+              <span className="text-zinc-600 block font-normal text-xs mt-0.5">Ej: "10K en 52 min hace 2 meses", "Media maratón en 1h58 el año pasado"</span>
+            </label>
+            <textarea
+              value={form.recentRaceResults}
+              onChange={(e) => setForm({ ...form, recentRaceResults: e.target.value })}
+              placeholder="Escribe tus resultados más recientes..."
+              rows={2}
+              className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-zinc-600 resize-none"
+            />
+          </div>
+
+          {/* ── FUERZA ── */}
+          <SectionTitle>Entrenamiento de fuerza <OptionalBadge /></SectionTitle>
+
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-2">
+              Días de fuerza por semana <OptionalBadge />
+            </label>
+            <div className="flex gap-2">
+              {['0', '1', '2'].map((d) => (
+                <button key={d} type="button" onClick={() => setForm({ ...form, strengthDays: d })}
+                  className={`px-6 py-2.5 rounded-lg text-sm font-bold border transition-colors ${form.strengthDays === d ? 'bg-green-500 border-green-500 text-black' : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500'}`}>
+                  {d === '0' ? 'Ninguno' : d}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {form.strengthDays !== '0' && (
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-2">Material disponible</label>
+              <div className="flex flex-wrap gap-2">
+                {EQUIPMENT_OPTIONS.map((item) => (
+                  <button key={item} type="button" onClick={() => toggleEquipment(item)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${selectedEquipment.includes(item) ? 'bg-green-500/20 border-green-500 text-green-400' : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500'}`}>
+                    {item}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
+
+          {/* ── SALUD ── */}
+          <SectionTitle>Salud y limitaciones <OptionalBadge /></SectionTitle>
+
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+              Lesiones o molestias actuales <OptionalBadge />
+              <span className="text-zinc-600 block font-normal text-xs mt-0.5">Ej: "rodilla derecha", "fascitis plantar leve", "ninguna"</span>
+            </label>
+            <input
+              type="text"
+              value={form.injuries}
+              onChange={(e) => setForm({ ...form, injuries: e.target.value })}
+              placeholder="Describe cualquier lesión o molestia..."
+              className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-zinc-600"
+            />
+          </div>
+
+          {/* ── EXTRA ── */}
+          <SectionTitle>Información adicional <OptionalBadge /></SectionTitle>
+
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+              Cuéntanos lo que quieras <OptionalBadge />
+              <span className="text-zinc-600 block font-normal text-xs mt-0.5">Objetivos, limitaciones de tiempo, preferencias de entrenamiento...</span>
+            </label>
+            <textarea
+              value={form.extraInfo}
+              onChange={(e) => setForm({ ...form, extraInfo: e.target.value })}
+              placeholder="Cualquier información que creas relevante para tu entrenador..."
+              rows={3}
+              className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-zinc-600 resize-none"
+            />
+          </div>
+
+          {errorMsg && <p className="text-sm text-red-400">{errorMsg}</p>}
 
           <button
             type="submit"
@@ -218,9 +339,7 @@ function GenerarPlanForm() {
             {status === 'loading' ? 'Enviando datos a tu entrenador...' : 'Solicitar mi plan de entrenamiento →'}
           </button>
 
-          <p className="text-xs text-zinc-600 text-center">
-            Recibirás el plan completo en PDF por email en unos minutos.
-          </p>
+          <p className="text-xs text-zinc-600 text-center">Recibirás tu plan personalizado en el correo en breve.</p>
         </form>
       </div>
     </div>
