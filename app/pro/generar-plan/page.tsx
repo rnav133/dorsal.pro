@@ -30,7 +30,7 @@ function GenerarPlanForm() {
   const preselectedRaceId = searchParams.get('raceId')
 
   const [races, setRaces] = useState<Race[]>([])
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error' | 'exists'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
   const [selectedEquipment, setSelectedEquipment] = useState<string[]>([])
 
@@ -63,38 +63,50 @@ function GenerarPlanForm() {
     )
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!form.email || !form.raceId || !form.currentPace) return
-    setStatus('loading')
-    setErrorMsg('')
+  function buildPayload() {
+    return {
+      email: form.email,
+      raceId: form.raceId,
+      raceName: selectedRace?.name,
+      raceDate: selectedRace?.date,
+      raceDistance: selectedRace?.distance,
+      raceType: selectedRace?.type,
+      currentPace: form.currentPace,
+      availableDays: form.availableDays,
+      level: form.level,
+      injuries: form.injuries,
+      recentRaceResults: form.recentRaceResults,
+      vo2max: form.vo2max,
+      weeklyKm: form.weeklyKm,
+      strengthDays: form.strengthDays,
+      equipment: selectedEquipment,
+      extraInfo: form.extraInfo,
+    }
+  }
 
+  async function handleForceSubmit() {
+    setStatus('loading')
+    // Delete existing registration first, then regenerate
+    await fetch('/api/training/generate', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: form.email, raceId: form.raceId }),
+    })
+    await submitPlan()
+  }
+
+  async function submitPlan() {
     try {
       const res = await fetch('/api/training/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: form.email,
-          raceId: form.raceId,
-          raceName: selectedRace?.name,
-          raceDate: selectedRace?.date,
-          raceDistance: selectedRace?.distance,
-          raceType: selectedRace?.type,
-          currentPace: form.currentPace,
-          availableDays: form.availableDays,
-          level: form.level,
-          injuries: form.injuries,
-          recentRaceResults: form.recentRaceResults,
-          vo2max: form.vo2max,
-          weeklyKm: form.weeklyKm,
-          strengthDays: form.strengthDays,
-          equipment: selectedEquipment,
-          extraInfo: form.extraInfo,
-        }),
+        body: JSON.stringify(buildPayload()),
       })
       const data = await res.json()
       if (res.ok) {
         setStatus('success')
+      } else if (data.code === 'PLAN_EXISTS') {
+        setStatus('exists')
       } else {
         setStatus('error')
         setErrorMsg(data.error || 'Error generando el plan')
@@ -103,6 +115,14 @@ function GenerarPlanForm() {
       setStatus('error')
       setErrorMsg('Error de conexión')
     }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.email || !form.raceId || !form.currentPace) return
+    setStatus('loading')
+    setErrorMsg('')
+    await submitPlan()
   }
 
   if (status === 'success') {
@@ -331,9 +351,23 @@ function GenerarPlanForm() {
 
           {errorMsg && <p className="text-sm text-red-400">{errorMsg}</p>}
 
+          {status === 'exists' && (
+            <div className="bg-zinc-800 border border-zinc-600 rounded-xl p-4">
+              <p className="text-sm font-semibold text-zinc-100 mb-1">Ya tienes un plan para esta carrera</p>
+              <p className="text-xs text-zinc-400 mb-3">Ya generaste un plan de entrenamiento para esta carrera. ¿Quieres descartarlo y crear uno nuevo con los datos actuales?</p>
+              <button
+                type="button"
+                onClick={() => { setStatus('idle'); handleForceSubmit() }}
+                className="text-xs font-semibold text-green-400 hover:text-green-300 transition-colors"
+              >
+                Sí, regenerar el plan →
+              </button>
+            </div>
+          )}
+
           <button
             type="submit"
-            disabled={status === 'loading'}
+            disabled={status === 'loading' || status === 'exists'}
             className="w-full bg-green-500 hover:bg-green-400 disabled:opacity-50 text-black font-bold py-3 rounded-xl transition-colors"
           >
             {status === 'loading' ? 'Enviando datos a tu entrenador...' : 'Solicitar mi plan de entrenamiento →'}

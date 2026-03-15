@@ -6,6 +6,34 @@ import { TrainingWeek } from '@/types'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
+export async function DELETE(req: NextRequest) {
+  try {
+    const { email, raceId } = await req.json()
+    const { data: subscriber } = await supabase
+      .from('subscribers')
+      .select('id')
+      .eq('email', email.toLowerCase())
+      .single()
+    if (!subscriber) return NextResponse.json({ ok: true })
+
+    const { data: registration } = await supabase
+      .from('race_registrations')
+      .select('id')
+      .eq('subscriber_id', subscriber.id)
+      .eq('race_id', raceId)
+      .single()
+    if (!registration) return NextResponse.json({ ok: true })
+
+    await supabase.from('training_plans').delete().eq('race_registration_id', registration.id)
+    await supabase.from('race_registrations').delete().eq('id', registration.id)
+
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    console.error('Delete plan error:', error)
+    return NextResponse.json({ error: 'Error eliminando el plan' }, { status: 500 })
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -27,6 +55,21 @@ export async function POST(req: NextRequest) {
     }
     if (subscriber.plan !== 'pro') {
       return NextResponse.json({ error: 'Se requiere Dorsal Pro' }, { status: 403 })
+    }
+
+    // Check if a plan already exists for this race
+    const { data: existingRegistration } = await supabase
+      .from('race_registrations')
+      .select('id')
+      .eq('subscriber_id', subscriber.id)
+      .eq('race_id', raceId)
+      .single()
+
+    if (existingRegistration) {
+      return NextResponse.json(
+        { error: 'Ya tienes un plan para esta carrera', code: 'PLAN_EXISTS' },
+        { status: 409 }
+      )
     }
 
     // Generate plan with Claude
