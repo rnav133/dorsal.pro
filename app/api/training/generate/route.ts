@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { after } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
+
+const IS_DEV = process.env.NODE_ENV === 'development'
 import { supabase } from '@/lib/supabase'
 import { generateTrainingPlan } from '@/lib/claude'
 import { Resend } from 'resend'
@@ -89,26 +90,14 @@ export async function POST(req: NextRequest) {
 
     if (regError) throw regError
 
-    // Generate plan and send email in background — respond immediately
-    after(async () => {
+    const generateAndSend = async () => {
       try {
         const weeks = await generateTrainingPlan({
           subscriberId: subscriber.id,
-          raceName,
-          raceDate,
-          raceDistance,
-          raceType,
-          currentPace,
-          availableDays: Number(availableDays),
-          level,
+          raceName, raceDate, raceDistance, raceType,
+          currentPace, availableDays: Number(availableDays), level,
           name: subscriber.name,
-          injuries,
-          recentRaceResults,
-          vo2max,
-          weeklyKm,
-          strengthDays,
-          equipment,
-          extraInfo,
+          injuries, recentRaceResults, vo2max, weeklyKm, strengthDays, equipment, extraInfo,
         })
 
         await supabase.from('training_plans').insert({
@@ -126,9 +115,17 @@ export async function POST(req: NextRequest) {
           html: buildPlanEmail(subscriber.name, raceName, raceDate, weeks),
         })
       } catch (err) {
-        console.error('Background plan generation error:', err)
+        console.error('Plan generation error:', err)
       }
-    })
+    }
+
+    // In dev: run synchronously so we can see errors
+    // In production: run in background after response
+    if (IS_DEV) {
+      await generateAndSend()
+    } else {
+      after(generateAndSend)
+    }
 
     return NextResponse.json({ ok: true })
   } catch (error) {

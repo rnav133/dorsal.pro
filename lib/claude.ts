@@ -101,8 +101,8 @@ REGLAS OBLIGATORIAS:
 - ${params.vo2max ? `Usa el VO2max de ${params.vo2max} para calcular zonas de ritmo más precisas` : ''}
 - ${params.weeklyKm ? `El corredor ya hace ${params.weeklyKm} km semanales — parte de ese volumen como base` : ''}`
 
-  // For long plans cap at 12 weeks to keep JSON manageable
-  const cappedWeeks = Math.min(weeksUntilRace, 12)
+  // Generate in batches of 4 weeks max per call
+  const cappedWeeks = Math.min(weeksUntilRace, 4)
 
   const message = await client.messages.create({
     model: 'claude-sonnet-4-6',
