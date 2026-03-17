@@ -119,17 +119,21 @@ REGLAS OBLIGATORIAS:
   const content = message.content[0]
   if (content.type !== 'text') throw new Error('Unexpected response type from Claude')
 
-  // Extract JSON — handle potentially truncated responses
-  const jsonMatch = content.text.match(/\{[\s\S]*/)
-  if (!jsonMatch) throw new Error('No JSON found in Claude response')
+  // Extract JSON — strip markdown code blocks if present
+  let jsonStr = content.text
+    .replace(/^```(?:json)?\s*/m, '')  // remove opening ```json
+    .replace(/\s*```\s*$/m, '')         // remove closing ```
+    .trim()
 
-  let jsonStr = jsonMatch[0]
-  // Try to parse; if it fails due to truncation, close open structures
+  const jsonMatch = jsonStr.match(/\{[\s\S]*/)
+  if (!jsonMatch) throw new Error('No JSON found in Claude response')
+  jsonStr = jsonMatch[0]
+
+  // Try to parse; if truncated, close open structures
   try {
     const parsed = JSON.parse(jsonStr)
     return parsed.weeks as TrainingWeek[]
   } catch {
-    // Close any unclosed JSON structures
     const openBraces = (jsonStr.match(/\{/g) || []).length - (jsonStr.match(/\}/g) || []).length
     const openBrackets = (jsonStr.match(/\[/g) || []).length - (jsonStr.match(/\]/g) || []).length
     jsonStr += ']'.repeat(Math.max(0, openBrackets)) + '}'.repeat(Math.max(0, openBraces))
